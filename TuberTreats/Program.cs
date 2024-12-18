@@ -119,6 +119,7 @@ List<TuberOrder> orders = new List<TuberOrder>
 
 //TuberTopping - represents toppings added to specific orders
 //Has these properties: Id, TuberOrderId, ToppingId
+
 List<TuberTopping> tuberToppings = new List<TuberTopping>
 {
     new TuberTopping
@@ -226,20 +227,16 @@ app.MapGet(
                 ? drivers.FirstOrDefault(d => d.Id == order.TuberDriverId)
                 : new TuberDriver();
 
-        List<ToppingDTO> toppingDTOs;
+        // Get all TuberToppings for the current order
+        List<TuberTopping> thisTuberToppings = tuberToppings
+            .Where(tt => tt.TuberOrderId == order.Id)
+            .ToList();
 
-        if (order.Toppings == null)
-        {
-            // If Toppings is null, assign an empty list to toppingDTOs
-            toppingDTOs = new List<ToppingDTO>();
-        }
-        else
-        {
-            // If Toppings is not null, map to ToppingDTO and convert to a list
-            toppingDTOs = order
-                .Toppings.Select(t => new ToppingDTO { Id = t.Id, Name = t.Name })
-                .ToList();
-        }
+        // Map Toppings to ToppingDTOs
+        List<ToppingDTO> toppingDTOs = toppings
+            .Where(t => thisTuberToppings.Any(tt => tt.ToppingId == t.Id))
+            .Select(t => new ToppingDTO { Id = t.Id, Name = t.Name })
+            .ToList();
 
         // Map TuberOrder to TuberOrderDTO
         TuberOrderDTO orderDTO = new TuberOrderDTO
