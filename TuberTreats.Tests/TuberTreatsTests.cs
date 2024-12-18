@@ -1,17 +1,20 @@
 namespace TuberTreats.Tests;
-using Microsoft.AspNetCore.Mvc.Testing;
-using System.Text.Json;
+
 using System.Net.Http.Json;
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using TuberTreats.Models;
 
 public class TuberTreatsTests
 {
-    private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 
     [Fact]
     public async void TestTuberOrders()
     {
-
         await using var application = new WebApplicationFactory<Program>();
         using var client = application.CreateClient();
 
@@ -38,11 +41,20 @@ public class TuberTreatsTests
             var singleOrder = await Get<TuberOrder>(client, $"/tuberorders/{order.Id}");
             var orderToppings = tuberToppings
                 .Where(tuberTopping => tuberTopping.TuberOrderId == singleOrder.Id)
-                .Select(tuberTopping => toppings.First(topping => topping.Id == tuberTopping.ToppingId)).ToList();
+                .Select(tuberTopping =>
+                    toppings.First(topping => topping.Id == tuberTopping.ToppingId)
+                )
+                .ToList();
             Assert.Equal(order.Id, singleOrder.Id);
             if (orderToppings.Count > 0)
             {
-                Assert.True(Enumerable.SequenceEqual(orderToppings.OrderBy(t => t.Id), singleOrder.Toppings.OrderBy(t => t.Id), new ToppingComparer()));
+                Assert.True(
+                    Enumerable.SequenceEqual(
+                        orderToppings.OrderBy(t => t.Id),
+                        singleOrder.Toppings.OrderBy(t => t.Id),
+                        new ToppingComparer()
+                    )
+                );
             }
         }
 
@@ -50,10 +62,11 @@ public class TuberTreatsTests
         //get id of first customer
         var customerId = customers[0].Id;
 
-        var newOrder = await Post<TuberOrder>(client, "/tuberorders", new TuberOrder
-        {
-            CustomerId = customerId
-        });
+        var newOrder = await Post<TuberOrder>(
+            client,
+            "/tuberorders",
+            new TuberOrder { CustomerId = customerId }
+        );
         //new order gets a new id
         Assert.True(newOrder.Id != null && newOrder.Id > 0);
         // new order has the correct customer id
@@ -91,7 +104,6 @@ public class TuberTreatsTests
         var topping = await Get<Topping>(client, $"/toppings/{firstToppingId}");
         Assert.Equal(firstToppingId, topping.Id);
         Assert.True(topping.Name != null);
-
     }
 
     [Fact]
@@ -107,11 +119,11 @@ public class TuberTreatsTests
         List<Topping> toppings = await Get<List<Topping>>(client, "/toppings");
         var firstOrder = await Get<TuberOrder>(client, $"/tuberorders/{orders[0].Id}");
         var firstTopping = toppings[0];
-        var newTuberTopping = await Post<TuberTopping>(client, "/tubertoppings", new TuberTopping
-        {
-            TuberOrderId = firstOrder.Id,
-            ToppingId = firstTopping.Id
-        });
+        var newTuberTopping = await Post<TuberTopping>(
+            client,
+            "/tubertoppings",
+            new TuberTopping { TuberOrderId = firstOrder.Id, ToppingId = firstTopping.Id }
+        );
 
         //update our local order
         if (firstOrder.Toppings != null)
@@ -129,13 +141,24 @@ public class TuberTreatsTests
         var toppedOrder = await Get<TuberOrder>(client, $"/tuberorders/{firstOrder.Id}");
 
         //Check the local order and the order from the database for equality
-        Assert.True(Enumerable.SequenceEqual(toppedOrder.Toppings.OrderBy(t => t.Id), firstOrder.Toppings.OrderBy(t => t.Id), new ToppingComparer()));
+        Assert.True(
+            Enumerable.SequenceEqual(
+                toppedOrder.Toppings.OrderBy(t => t.Id),
+                firstOrder.Toppings.OrderBy(t => t.Id),
+                new ToppingComparer()
+            )
+        );
 
         //delete the new tubertopping
         await client.DeleteAsync($"/tubertoppings/{newTuberTopping.Id}");
-        List<TuberTopping> tuberToppingsUpdated = await Get<List<TuberTopping>>(client, "/tubertoppings");
-        //tuberToping should no longer be in the database. 
-        Assert.True(!tuberToppingsUpdated.Any(tuberTopping => tuberTopping.Id == newTuberTopping.Id));
+        List<TuberTopping> tuberToppingsUpdated = await Get<List<TuberTopping>>(
+            client,
+            "/tubertoppings"
+        );
+        //tuberToping should no longer be in the database.
+        Assert.True(
+            !tuberToppingsUpdated.Any(tuberTopping => tuberTopping.Id == newTuberTopping.Id)
+        );
     }
 
     [Fact]
@@ -150,14 +173,20 @@ public class TuberTreatsTests
 
         var lastCustomerWithOrders = await Get<Customer>(client, $"/customers/{lastCustomer.Id}");
         Assert.Equal(lastCustomerWithOrders.Name, lastCustomer.Name);
-        Assert.True(Enumerable.SequenceEqual(lastCustomerWithOrders.TuberOrders.OrderBy(t => t.Id), customerOrders.OrderBy(t => t.Id), new OrderComparer()));
+        Assert.True(
+            Enumerable.SequenceEqual(
+                lastCustomerWithOrders.TuberOrders.OrderBy(t => t.Id),
+                customerOrders.OrderBy(t => t.Id),
+                new OrderComparer()
+            )
+        );
 
         //make a new customer
-        var newCustomer = await Post<Customer>(client, "/customers", new Customer
-        {
-            Name = "Tony",
-            Address = "101 Main Street"
-        });
+        var newCustomer = await Post<Customer>(
+            client,
+            "/customers",
+            new Customer { Name = "Tony", Address = "101 Main Street" }
+        );
         //new customer gets a new id
         Assert.True(newCustomer.Id != null && newCustomer.Id > 0);
 
@@ -170,6 +199,7 @@ public class TuberTreatsTests
         var customersAfterDelete = await Get<List<Customer>>(client, "/customers");
         Assert.True(!customersAfterDelete.Any(c => c.Id == newCustomer.Id));
     }
+
     [Fact]
     public async void TestEmployees()
     {
@@ -180,10 +210,18 @@ public class TuberTreatsTests
         var firstDriver = drivers.FirstOrDefault();
         var driverOrders = orders.Where(o => o.TuberDriverId == firstDriver.Id);
 
-        var firstDriverWithOrders = await Get<TuberDriver>(client, $"/tuberdrivers/{firstDriver.Id}");
+        var firstDriverWithOrders = await Get<TuberDriver>(
+            client,
+            $"/tuberdrivers/{firstDriver.Id}"
+        );
         Assert.Equal(firstDriverWithOrders.Name, firstDriver.Name);
-        Assert.True(Enumerable.SequenceEqual(firstDriverWithOrders.TuberDeliveries.OrderBy(t => t.Id), driverOrders.OrderBy(t => t.Id), new OrderComparer()));
-
+        Assert.True(
+            Enumerable.SequenceEqual(
+                firstDriverWithOrders.TuberDeliveries.OrderBy(t => t.Id),
+                driverOrders.OrderBy(t => t.Id),
+                new OrderComparer()
+            )
+        );
     }
 
     private async Task<T> Get<T>(HttpClient client, string uri)
@@ -202,7 +240,6 @@ public class TuberTreatsTests
         var newObject = await response.Content.ReadFromJsonAsync<T>();
         return newObject;
     }
-
 }
 
 class ToppingComparer : IEqualityComparer<Topping>
@@ -217,15 +254,16 @@ class ToppingComparer : IEqualityComparer<Topping>
         return base.GetHashCode();
     }
 }
+
 class OrderComparer : IEqualityComparer<TuberOrder>
 {
     public bool Equals(TuberOrder t1, TuberOrder t2)
     {
-        return t1.Id == t2.Id &&
-               t1.TuberDriverId == t2.TuberDriverId &&
-               t1.CustomerId == t2.CustomerId &&
-               t1.OrderPlacedOnDate == t2.OrderPlacedOnDate &&
-               t1.DeliveredOnDate == t2.DeliveredOnDate;
+        return t1.Id == t2.Id
+            && t1.TuberDriverId == t2.TuberDriverId
+            && t1.CustomerId == t2.CustomerId
+            && t1.OrderPlacedOnDate == t2.OrderPlacedOnDate
+            && t1.DeliveredOnDate == t2.DeliveredOnDate;
     }
 
     public int GetHashCode(TuberOrder obj)
