@@ -139,6 +139,8 @@ public class TuberTreatsTests
         Assert.True(newTuberTopping.Id > 0);
         // new topping is added to the order
         var toppedOrder = await Get<TuberOrder>(client, $"/tuberorders/{firstOrder.Id}");
+        Console.WriteLine(toppedOrder.Toppings.OrderBy(t => t.Id));
+        Console.WriteLine(firstOrder.Toppings.OrderBy(t => t.Id));
 
         //Check the local order and the order from the database for equality
         Assert.True(
